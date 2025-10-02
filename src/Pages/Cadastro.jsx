@@ -1,27 +1,28 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function RegisterPage() {
+export default function Cadastro() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const navigate = useNavigate;
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (password !== confirmPassword) {
+    if (password === confirmPassword) {
+      alert("Cadastro bem-sucedido! Faça o login para prosseguir.");
+      return;
+    }
+    else {
       alert("As senhas não coincidem!");
       return;
     }
-
-    // Aqui você pode colocar a lógica de cadastro (ex: enviar dados para API)
-    console.log("Nome:", name);
-    console.log("Email:", email);
-    console.log("Senha:", password);
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <div className="w-full max-w-sm p-8 bg-white rounded-2xl shadow-lg">
         <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
           Cadastro
@@ -90,19 +91,19 @@ export default function RegisterPage() {
           {/* Botão Cadastrar */}
           <button
             type="submit"
-            className="w-full bg-green-600 text-white py-2 rounded-xl hover:bg-green-700 transition"
-          >
+            className="w-full bg-green-600 text-white py-2 rounded-xl hover:bg-green-700 transition">
             Cadastrar
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-600 mt-4">
           Já tem conta?{" "}
-          <a href="/login" className="text-blue-600 hover:underline">
+          <a href="/" className="text-blue-600 hover:underline">
             Faça login
           </a>
         </p>
       </div>
+      <h2 className="block mb-2 text-sm font-medium text-gray-700">Desenvolvido por: Imãos Metralha</h2>
     </div>
   );
 }
