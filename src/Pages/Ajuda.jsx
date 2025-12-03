@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 
 export default function Ajuda() {
+  // Estado dos dados do formulário
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
@@ -9,6 +10,8 @@ export default function Ajuda() {
   });
 
   const [isVisible, setIsVisible] = useState(false);
+  
+  const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -21,10 +24,34 @@ export default function Ajuda() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const mailtoLink = `mailto:naf01.dl@unichristus.edu.br?subject=Dúvida sobre o Calculadora Tributária&body=Nome: ${formData.nome}%0D%0AEmail: ${formData.email}%0D%0A%0D%0AMensagem:%0D%0A${formData.mensagem}`;
-    window.location.href = mailtoLink;
+    setEnviando(true); // Avisa que começou a enviar (bloqueia botão)
+
+    try {
+      const response = await fetch('http://localhost:3000/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+      
+
+      if (response.ok) {
+        alert('Mensagem enviada com sucesso ao NAF!');
+        setFormData({ nome: "", email: "", mensagem: "" });
+      } else {
+        alert('Houve um erro ao enviar a mensagem. Tente novamente.');
+      }
+    } catch (error) {
+      console.error("Erro:", error);
+      alert('Erro de conexão com o servidor (O backend está rodando?).');
+    } finally {
+      setEnviando(false); // libera o botão
+    }
   };
 
   return (
@@ -222,11 +249,13 @@ export default function Ajuda() {
               </div>
 
               <div className={`transition-all duration-[700ms] ease-out delay-[1300ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+                {/* BOTÃO ATUALIZADO PARA MOSTRAR FEEDBACK */}
                 <button
                   type="submit"
-                  className="w-full bg-yellow-500 text-white py-3 rounded-xl hover:bg-yellow-600 transition-all duration-[400ms] ease-out text-lg font-medium"
+                  disabled={enviando}
+                  className={`w-full bg-yellow-500 text-white py-3 rounded-xl hover:bg-yellow-600 transition-all duration-[400ms] ease-out text-lg font-medium ${enviando ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
-                  Enviar Mensagem
+                  {enviando ? "Enviando..." : "Enviar Mensagem"}
                 </button>
               </div>
             </form>
