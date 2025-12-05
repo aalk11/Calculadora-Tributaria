@@ -26,24 +26,53 @@ export default function Login() {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const formErrors = validateForm();
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  const formErrors = validateForm();
 
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
-      return;
-    }
+  if (Object.keys(formErrors).length > 0) {
+    setErrors(formErrors);
+    return;
+  }
 
-    setErrors({});
+  setErrors({});
 
-    if (email === "teste@teste.com" && password === "123456") {
+  try {
+    console.log("Enviando dados para login:", { email, password });
+    
+    const response = await fetch('http://localhost:3000/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,
+        senha: password
+      })
+    });
+
+    const data = await response.json();
+    
+    if (response.ok) {
+      console.log("Login bem-sucedido!", data);
+      alert("Login bem-sucedido!");
+      
+      // Salva o token no localStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // Navega para a Home
       navigate("/Home");
     } else {
-      console.error("Email ou senha inválidos!");
-      alert("Email ou senha inválidos!");
+      // Mostra o erro retornado pelo backend
+      alert(`Erro no login: ${data.message}`);
+      console.error("Erro do backend:", data);
     }
-  };
+  } catch (error) {
+    console.error("Erro ao conectar com o servidor:", error);
+    alert("Erro ao conectar com o servidor. Verifique se o backend está rodando.");
+  }
+};
 
   return (
     <div

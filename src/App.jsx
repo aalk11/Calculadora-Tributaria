@@ -10,7 +10,6 @@ import Ajuda from './Pages/Ajuda'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 function App() {
-
   return (
     <BrowserRouter>
       <div>

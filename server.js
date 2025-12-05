@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt'; // ← ADICIONE ESTA IMPORT
 import mysql from 'mysql2/promise';
 import express from 'express';
 import cors from 'cors';
@@ -25,24 +24,22 @@ const pool = mysql.createPool({
     host: "localhost",
     user: "root",
     password: "Ra998122663r@.",
-    database: "banco_viado",
+    database: "usuario_db",
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
 });
 
-// FUNÇÃO PARA INICIALIZAR O BANCO (CORRIGIDA)
+// FUNÇÃO PARA INICIALIZAR O BANCO
 async function inicializarBD() {
     let conexao;
     try {
         conexao = await pool.getConnection();
         console.log("✅ Conectado ao MySQL!");
 
-        // Verifica qual database estamos usando
         const [dbInfo] = await conexao.execute("SELECT DATABASE() as current_db");
         console.log(`📁 Database atual: ${dbInfo[0].current_db}`);
 
-        // Cria a tabela se não existir
         await conexao.execute(`
             CREATE TABLE IF NOT EXISTS usuarios (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -54,12 +51,6 @@ async function inicializarBD() {
         `);
         console.log("✅ Tabela 'usuarios' verificada/criada.");
 
-        // Verifica se a tabela foi criada
-        const [tabelas] = await conexao.execute("SHOW TABLES LIKE 'usuarios'");
-        if (tabelas.length === 0) {
-            throw new Error("Tabela 'usuarios' não foi criada!");
-        }
-
         console.log("✅ Banco de dados inicializado com sucesso!");
 
     } catch (error) {
@@ -68,6 +59,8 @@ async function inicializarBD() {
         console.error("Código:", error.code);
         if (error.sql) console.error("SQL:", error.sql);
         if (error.sqlMessage) console.error("SQL Message:", error.sqlMessage);
+        // Não inicia o servidor se o banco falhar
+        process.exit(1);
     } finally {
         if (conexao) conexao.release();
     }
@@ -78,6 +71,9 @@ inicializarBD().then(() => {
     app.listen(PORT, () => {
         console.log(`🚀 Servidor rodando na porta ${PORT}`);
     });
+}).catch((error) => {
+    console.error("❌ Falha ao inicializar o banco de dados. Servidor não iniciado.");
+    process.exit(1);
 });
 
 // Configuração do email
@@ -120,7 +116,7 @@ app.post('/send-email', async (req, res) => {
     }
 });
 
-// REGISTRO DE USUARIO (CORRIGIDO)
+// REGISTRO DE USUARIO (SEM CRIPTOGRAFIA - APENAS PARA TESTE!)
 app.post('/register', async (req, res) => {
     let conexao;
     try {
@@ -146,15 +142,13 @@ app.post('/register', async (req, res) => {
             return res.status(409).json({ message: "Email já registrado." });
         }
 
-        // 2. Hash da senha (NUNCA armazene senhas em texto puro!)
-        const saltRounds = 10;
-        const senhaHash = await bcrypt.hash(senha, saltRounds);
-        console.log("🔐 Senha hasheada com sucesso");
+        // 2. AVISO: Armazenando senha em texto puro (NUNCA FAÇA ISSO EM PRODUÇÃO!)
+        console.log("⚠  AVISO: Senha sendo armazenada em texto puro!");
 
-        // 3. Inserir novo usuário 
+        // 3. Inserir novo usuário (senha em texto puro)
         const [result] = await conexao.execute(
             "INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)",
-            [nome, email, senhaHash] // ← Armazena o HASH, não a senha em texto
+            [nome, email, senha] // ← SENHA EM TEXTO PURO!
         );
 
         console.log(`✅ Usuário inserido com ID: ${result.insertId}`);
@@ -166,11 +160,7 @@ app.post('/register', async (req, res) => {
         });
 
     } catch (error) {
-        console.error("❌ ERRO no registro:");
-        console.error("Mensagem:", error.message);
-        console.error("Código:", error.code);
-        if (error.sql) console.error("SQL:", error.sql);
-        if (error.sqlMessage) console.error("SQL Message:", error.sqlMessage);
+        console.error("❌ ERRO no registro:", error.message);
         
         return res.status(500).json({ 
             message: "Erro interno no servidor",
@@ -181,7 +171,7 @@ app.post('/register', async (req, res) => {
     }
 });
 
-// LOGIN USUARIO (CORRIGIDO)
+// LOGIN USUARIO (COMPARAÇÃO EM TEXTO PURO)
 app.post('/login', async (req, res) => {
     let conexao;
     try {
@@ -210,11 +200,9 @@ app.post('/login', async (req, res) => {
 
         const usuario = usuarios[0];
         console.log(`👤 Usuário encontrado: ${usuario.nome} (ID: ${usuario.id})`);
-
-        // 2. Verificar a senha (comparando com o hash)
-        const senhaValida = await bcrypt.compare(senha, usuario.senha);
         
-        if (!senhaValida) {
+        // 2. Comparação direta da senha (TEXTO PURO - PERIGOSO!)
+        if (senha !== usuario.senha) {
             console.log("❌ Senha incorreta para:", email);
             return res.status(401).json({ message: "Credenciais inválidas." });
         }
@@ -243,9 +231,7 @@ app.post('/login', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ ERRO no login:');
-        console.error("Mensagem:", error.message);
-        console.error("Código:", error.code);
+        console.error('❌ ERRO no login:', error.message);
         
         return res.status(500).json({ message: "Erro interno do servidor." });
     } finally {
@@ -289,3 +275,28 @@ app.get('/debug/usuarios', authenticateToken, async (req, res) => {
         if (conexao) conexao.release();
     }
 });
+
+// ROTA para ver todos os usuários com senhas (APENAS PARA DEBUG)
+app.get('/debug/todos-usuarios', async (req, res) => {
+    let conexao;
+    try {
+        conexao = await pool.getConnection();
+        const [usuarios] = await conexao.execute("SELECT id, nome, email, senha, created_at FROM usuarios");
+        
+        console.log("📊 Usuários no banco:", usuarios);
+        
+        return res.status(200).json({
+            total: usuarios.length,
+            usuarios: usuarios
+        });
+    } catch (error) {
+        console.error("Erro no debug:", error);
+        return res.status(500).json({ error: error.message });
+    } finally {
+        if (conexao) conexao.release();
+    }
+});
+
+app.get("/protegido", authenticateToken, (req, res) => {
+    res.status(200).json({ message: "Acesso concedido à rota protegida.", user: req.user });
+})
