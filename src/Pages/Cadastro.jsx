@@ -29,19 +29,47 @@ export default function Cadastro() {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const formErrors = validateForm();
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  const formErrors = validateForm();
 
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
-      return;
+  if (Object.keys(formErrors).length > 0) {
+    setErrors(formErrors);
+    return;
+  }
+  setErrors({});
+
+  try {
+    console.log("Enviando dados para o backend:", { name, email, password });
+    
+    const response = await fetch('http://localhost:3000/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        nome: name,
+        email: email,
+        senha: password
+      })
+    });
+
+    const data = await response.json();
+    
+    if (response.ok) {
+      alert("Cadastro bem-sucedido! Faça o login para prosseguir.");
+      console.log("Usuário cadastrado com ID:", data.userId);
+      navigate("/");
+    } else {
+      // Mostra o erro retornado pelo backend
+      alert(`Erro no cadastro: ${data.message}`);
+      console.error("Erro do backend:", data);
     }
-    setErrors({});
-
-    alert("Cadastro bem-sucedido! Faça o login para prosseguir.");
-    navigate("/");
-  };
+  } catch (error) {
+    console.error("Erro ao conectar com o servidor:", error);
+    alert("Erro ao conectar com o servidor. Verifique se o backend está rodando.");
+  }
+};
 
   useEffect(() => {
     const timer = setTimeout(() => {
