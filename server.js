@@ -1,10 +1,11 @@
-import dotenv from 'dotenv';
-dotenv.config();
 import jwt from 'jsonwebtoken';
 import mysql from 'mysql2/promise';
 import express from 'express';
 import cors from 'cors';
 import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 const PORT = 3000;
@@ -80,8 +81,8 @@ inicializarBD().then(() => {
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'queiroz.caua.rj@gmail.com',
-        pass: 'gaoi rztb ddhd xfnr'
+        user: process.env.email,
+        pass: process.env.senha
     }
 });
 
@@ -94,8 +95,8 @@ app.post('/send-email', async (req, res) => {
     }
 
     const mailOptions = {
-        from: 'queiroz.caua.rj@gmail.com',
-        to: "umcarinha1702@gmail.com",
+        from: 'queiroz.caua.rj@gmail.com', // email q vc vai mandar
+        to: "umcarinha1702@gmail.com", // email naf
         subject: `[AJUDA NAF] Dúvida de: ${nome}`,
         text: `
             Nome do Usuário: ${nome}
