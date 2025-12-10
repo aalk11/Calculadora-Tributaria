@@ -6,6 +6,13 @@ export default function Home() {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
 
+    const token = localStorage.getItem("token");
+    useEffect(() => {
+      if (!token) {
+        navigate("/");
+      }
+    }, [token, navigate])
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(true);

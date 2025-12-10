@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
+import { useNavigate } from "react-router-dom";
 
 export default function Ajuda() {
   // Estado dos dados do formulário
@@ -9,10 +10,18 @@ export default function Ajuda() {
     mensagem: "",
   });
 
+  const token = localStorage.getItem("token");
   const [isVisible, setIsVisible] = useState(false);
   
   const [enviando, setEnviando] = useState(false);
 
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!token) {
+      navigate("/");
+    }
+  }, [token, navigate])
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(true);

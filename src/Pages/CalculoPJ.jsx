@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
+import { useNavigate } from "react-router-dom";
 
 export default function CalculoPJ() {
   const [renda, setRenda] = useState("");
@@ -12,6 +13,14 @@ export default function CalculoPJ() {
   const [mensagemEnvio, setMensagemEnvio] = useState("");
   const [profissao, setProfissao] = useState("psicologo");
   const [showTooltipRenda, setShowTooltipRenda] = useState(false);
+
+    const token = localStorage.getItem("token");
+  const navigate = useNavigate();
+    useEffect(() => {
+      if (!token) {
+        navigate("/");
+      }
+    }, [token, navigate])
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 100);

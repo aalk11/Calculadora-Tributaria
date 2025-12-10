@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
+import { useNavigate } from "react-router-dom";
 
 function CalculoPF() {
   const [renda, setRenda] = useState("");
@@ -14,6 +15,14 @@ function CalculoPF() {
   const [showTooltipRenda, setShowTooltipRenda] = useState(false);
   const [showTooltipCustos, setShowTooltipCustos] = useState(false);
   const [profissao, setProfissao] = useState("psicologo");
+
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
+    useEffect(() => {
+      if (!token) {
+        navigate("/");
+      }
+    }, [token, navigate])
 
   useEffect(() => {
     const timer = setTimeout(() => {

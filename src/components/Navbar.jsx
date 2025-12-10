@@ -4,6 +4,12 @@ import { useNavigate } from "react-router-dom";
 export default function Navbar() {
   const navigate = useNavigate();
 
+    const handleLogout = () => {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      navigate("/");
+    }
+
   return (
     <nav className="w-full bg-white shadow-md">
       <div className="max-w-6xl mx-auto px-4">
@@ -57,7 +63,7 @@ export default function Navbar() {
             </div>
 
             <button
-              onClick={() => navigate('/')}
+              onClick={() => handleLogout() }
               className="ml-6 px-3 py-2 bg-red-500 text-white rounded-md text-sm font-medium hover:bg-red-600 hover:scale-105 transition-all duration-[500ms] ease-in-out"
             >
               Deslogar

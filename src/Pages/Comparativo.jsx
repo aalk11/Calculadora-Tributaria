@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
+import { useNavigate } from "react-router-dom";
 
 export default function Comparativo() {
   const [renda, setRenda] = useState("");
@@ -13,6 +14,14 @@ export default function Comparativo() {
   const [mostrarEmail, setMostrarEmail] = useState(false);
   const [email, setEmail] = useState("");
   const [mensagemEnvio, setMensagemEnvio] = useState("");
+
+    const token = localStorage.getItem("token");
+  const navigate = useNavigate();
+    useEffect(() => {
+      if (!token) {
+        navigate("/");
+      }
+    }, [token, navigate])
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 100);

@@ -24,22 +24,22 @@ app.use(
 const pool = mysql.createPool({
     host: "localhost",
     user: "root",
-    password: "Ra998122663r@.",
+    password: process.env.senha_db,
     database: "usuario_db",
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
 });
 
-// FUNÇÃO PARA INICIALIZAR O BANCO
+// Inicia o BD
 async function inicializarBD() {
     let conexao;
     try {
         conexao = await pool.getConnection();
-        console.log("✅ Conectado ao MySQL!");
+        console.log("Conectado ao MySQL!");
 
         const [dbInfo] = await conexao.execute("SELECT DATABASE() as current_db");
-        console.log(`📁 Database atual: ${dbInfo[0].current_db}`);
+        console.log(`Database atual: ${dbInfo[0].current_db}`);
 
         await conexao.execute(`
             CREATE TABLE IF NOT EXISTS usuarios (
@@ -50,34 +50,33 @@ async function inicializarBD() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-        console.log("✅ Tabela 'usuarios' verificada/criada.");
+        console.log("Tabela 'usuarios' verificada/criada.");
 
-        console.log("✅ Banco de dados inicializado com sucesso!");
+        console.log("Banco de dados inicializado com sucesso!");
 
     } catch (error) {
-        console.error("❌ ERRO ao inicializar banco de dados:");
+        console.error("ERRO ao inicializar banco de dados:");
         console.error("Mensagem:", error.message);
         console.error("Código:", error.code);
         if (error.sql) console.error("SQL:", error.sql);
         if (error.sqlMessage) console.error("SQL Message:", error.sqlMessage);
-        // Não inicia o servidor se o banco falhar
         process.exit(1);
     } finally {
         if (conexao) conexao.release();
     }
 }
 
-// INICIALIZA O BANCO ANTES DE RODAR O SERVIDOR
+// Inicia o servidor
 inicializarBD().then(() => {
     app.listen(PORT, () => {
-        console.log(`🚀 Servidor rodando na porta ${PORT}`);
+        console.log(`Servidor rodando na porta ${PORT}`);
     });
 }).catch((error) => {
-    console.error("❌ Falha ao inicializar o banco de dados. Servidor não iniciado.");
+    console.error("Falha ao inicializar o banco de dados. Servidor não iniciado.");
     process.exit(1);
 });
 
-// Configuração do email
+// Configuração do email com .env 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -86,7 +85,7 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// ROTA: Envio de email
+// Envio de email
 app.post('/send-email', async (req, res) => {
     const { nome, email, mensagem } = req.body;
 
@@ -95,8 +94,8 @@ app.post('/send-email', async (req, res) => {
     }
 
     const mailOptions = {
-        from: 'queiroz.caua.rj@gmail.com', // email q vc vai mandar
-        to: "umcarinha1702@gmail.com", // email naf
+        from: process.env.email, 
+        to: "mauricio.moreira@unichristus.edu.br", 
         subject: `[AJUDA NAF] Dúvida de: ${nome}`,
         text: `
             Nome do Usuário: ${nome}
@@ -109,7 +108,7 @@ app.post('/send-email', async (req, res) => {
 
     try {
         await transporter.sendMail(mailOptions);
-        console.log(`📧 Email enviado para ${mailOptions.to}`);
+        console.log(`Email enviado para ${mailOptions.to}`);
         return res.status(200).json({ message: 'Email enviado com sucesso!' });
     } catch (error) {
         console.error('ERRO AO ENVIAR EMAIL:', error);
@@ -117,13 +116,12 @@ app.post('/send-email', async (req, res) => {
     }
 });
 
-// REGISTRO DE USUARIO (SEM CRIPTOGRAFIA - APENAS PARA TESTE!)
 app.post('/register', async (req, res) => {
     let conexao;
     try {
         const { nome, email, senha } = req.body;
 
-        console.log("📝 Tentando registrar usuário:", { nome, email });
+        console.log("Tentando registrar usuário:", { nome, email });
 
         // Validação básica
         if (!nome || !email || !senha) {
@@ -133,7 +131,7 @@ app.post('/register', async (req, res) => {
         // Conecta ao banco
         conexao = await pool.getConnection();
 
-        // 1. Verificar se o email já existe
+        // Verifica se o email já existe
         const [existingUsers] = await conexao.execute(
             "SELECT id FROM usuarios WHERE email = ?",
             [email]
@@ -143,25 +141,23 @@ app.post('/register', async (req, res) => {
             return res.status(409).json({ message: "Email já registrado." });
         }
 
-        // 2. AVISO: Armazenando senha em texto puro (NUNCA FAÇA ISSO EM PRODUÇÃO!)
-        console.log("⚠  AVISO: Senha sendo armazenada em texto puro!");
+        console.log("AVISO: Senha sendo armazenada em texto puro!");
 
-        // 3. Inserir novo usuário (senha em texto puro)
         const [result] = await conexao.execute(
             "INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)",
-            [nome, email, senha] // ← SENHA EM TEXTO PURO!
+            [nome, email, senha] 
         );
 
-        console.log(`✅ Usuário inserido com ID: ${result.insertId}`);
+        console.log(`Usuário inserido com ID: ${result.insertId}`);
 
-        // 4. Retornar sucesso
+        // Retornar sucesso
         return res.status(201).json({ 
             message: "Usuário registrado com sucesso!", 
             userId: result.insertId 
         });
 
     } catch (error) {
-        console.error("❌ ERRO no registro:", error.message);
+        console.error("ERRO no registro:", error.message);
         
         return res.status(500).json({ 
             message: "Erro interno no servidor",
@@ -172,13 +168,12 @@ app.post('/register', async (req, res) => {
     }
 });
 
-// LOGIN USUARIO (COMPARAÇÃO EM TEXTO PURO)
 app.post('/login', async (req, res) => {
     let conexao;
     try {
         const { email, senha } = req.body;
 
-        console.log("🔑 Tentando login para:", email);
+        console.log("Tentando login para:", email);
 
         // Validação
         if (!email || !senha) {
@@ -188,27 +183,26 @@ app.post('/login', async (req, res) => {
         // Conecta ao banco
         conexao = await pool.getConnection();
 
-        // 1. Buscar usuário pelo email
+        // Busca usuário pelo email
         const [usuarios] = await conexao.execute(
             "SELECT * FROM usuarios WHERE email = ?",
             [email]
         );
 
         if (usuarios.length === 0) {
-            console.log("❌ Usuário não encontrado:", email);
+            console.log("Usuário não encontrado:", email);
             return res.status(401).json({ message: "Credenciais inválidas." });
         }
 
         const usuario = usuarios[0];
-        console.log(`👤 Usuário encontrado: ${usuario.nome} (ID: ${usuario.id})`);
+        console.log(`Usuário encontrado: ${usuario.nome} (ID: ${usuario.id})`);
         
-        // 2. Comparação direta da senha (TEXTO PURO - PERIGOSO!)
         if (senha !== usuario.senha) {
-            console.log("❌ Senha incorreta para:", email);
+            console.log("Senha incorreta para:", email);
             return res.status(401).json({ message: "Credenciais inválidas." });
         }
 
-        // 3. Gerar token JWT
+        // Gerar token JWT
         const token = jwt.sign(
             { 
                 id: usuario.id, 
@@ -219,7 +213,7 @@ app.post('/login', async (req, res) => {
             { expiresIn: '1h' }
         );
 
-        console.log("✅ Login bem-sucedido para:", usuario.email);
+        console.log("Login bem-sucedido para:", usuario.email);
 
         return res.status(200).json({ 
             message: "Login bem-sucedido.",
@@ -232,7 +226,7 @@ app.post('/login', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ ERRO no login:', error.message);
+        console.error('ERRO no login:', error.message);
         
         return res.status(500).json({ message: "Erro interno do servidor." });
     } finally {
@@ -258,7 +252,6 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// ROTA DE DEBUG (REMOVA EM PRODUÇÃO)
 app.get('/debug/usuarios', authenticateToken, async (req, res) => {
     let conexao;
     try {
@@ -277,14 +270,13 @@ app.get('/debug/usuarios', authenticateToken, async (req, res) => {
     }
 });
 
-// ROTA para ver todos os usuários com senhas (APENAS PARA DEBUG)
 app.get('/debug/todos-usuarios', async (req, res) => {
     let conexao;
     try {
         conexao = await pool.getConnection();
         const [usuarios] = await conexao.execute("SELECT id, nome, email, senha, created_at FROM usuarios");
         
-        console.log("📊 Usuários no banco:", usuarios);
+        console.log("Usuários no banco:", usuarios);
         
         return res.status(200).json({
             total: usuarios.length,
